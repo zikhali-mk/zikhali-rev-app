@@ -75,7 +75,7 @@ export default function TradeDetails() {
 
       Alert.alert("Deleted", "Trade removed successfully");
 
-      router.back();
+      router.push("/(tabs)/trades");
     } catch (error) {
       console.log(error);
       Alert.alert("Error", "Failed to delete trade");
