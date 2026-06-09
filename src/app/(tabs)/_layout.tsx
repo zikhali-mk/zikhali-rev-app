@@ -1,160 +1,124 @@
+import React from "react";
 import { Tabs } from "expo-router";
-import { View, Text, Image, StyleSheet, ImageBackground } from "react-native";
+import { BlurView } from "expo-blur";
+import { View, Text, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
-export default function Layout() {
+function TabIcon({
+  name,
+  label,
+  focused,
+}: {
+  name: keyof typeof Ionicons.glyphMap;
+  label: string;
+  focused: boolean;
+}) {
+  return (
+    <View style={focused?styles.tabItemf : styles.tabItem}>
+      {/* ICON */}
+      <Ionicons
+        name={name}
+        size={22}
+        color={focused ? "#ffd104" : "#9CA3AF"}
+      />
+
+      {/* LABEL ONLY WHEN FOCUSED */}
+      {focused && (
+        <Text style={styles.label}>
+          {label}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
+
+        // Main tab bar container
+        tabBarStyle: {
+          position: "absolute",
+          left: 16,
+          right: 16,
+          bottom: 0,
+          height: 72,
+          borderRadius: 20,
+          borderTopWidth: 0,
+          elevation: 0,
+          backgroundColor: "transparent",
+          overflow: "hidden",
+          paddingTop:15
+        },
+
+        // Blur background with slight dark overlay feel
         tabBarBackground: () => (
-  <ImageBackground
-    source={require("../../../assets/icons/tab-bg.jpg")}
-    style={{
-      flex: 1,
-      borderTopLeftRadius: 25,
-      borderTopRightRadius: 25,
-      overflow: "hidden",
-    }}
-    resizeMode="cover"
-  />
-),
-  tabBarStyle: styles.tabBar,
+          <BlurView
+            intensity={70}
+            tint="dark"
+            style={[
+              StyleSheet.absoluteFill,
+              styles.blurOverlay,
+            ]}
+          />
+        ),
+
+        // Center icons properly
+        tabBarItemStyle: {
+          justifyContent: "center",
+          alignItems: "center",
+        },
       }}
-      
     >
+      {/* HOME */}
       <Tabs.Screen
         name="index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <View
-              style={[
-                styles.tabItem,
-                focused && styles.activeTab,
-              ]}
-            >
-              <Image
-                source={require("../../../assets/icons/home.png")}
-                style={[
-                  styles.icon,
-                  // {
-                  //   tintColor: focused ? "#06b449" : "#8d8d8d",
-                  // },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: focused ? "#06b449" : "#8d8d8d",
-                  },
-                ]}
-              >
-                Home
-              </Text>
-            </View>
+            <TabIcon name="home" label="Home" focused={focused} />
           ),
         }}
       />
 
+      {/* JOURNAL */}
       <Tabs.Screen
-        name="trade"
+        name="journal"
         options={{
           tabBarIcon: ({ focused }) => (
-            <View
-              style={[
-                styles.tabItem,
-                focused && styles.activeTab,
-              ]}
-            >
-              <Image
-                source={require("../../../assets/icons/trade.png")}
-                style={[
-                  styles.icon,
-                  // {
-                  //   tintColor: focused ? "#06b449" : "#8d8d8d",
-                  // },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: focused ? "#06b449" : "#8d8d8d",
-                  },
-                ]}
-              >
-                Trade
-              </Text>
-            </View>
+            <TabIcon name="book" label="Journal" focused={focused} />
           ),
         }}
       />
 
+      {/* TRADES */}
       <Tabs.Screen
         name="trades"
         options={{
           tabBarIcon: ({ focused }) => (
-            <View
-              style={[
-                styles.tabItem,
-                focused && styles.activeTab,
-              ]}
-            >
-              <Image
-                source={require("../../../assets/icons/journal.png")}
-                style={[
-                  styles.icon,
-                  // {
-                  //   tintColor: focused ? "#06b449" : "#8d8d8d",
-                  // },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: focused ? "#06b449" : "#8d8d8d",
-                  },
-                ]}
-              >
-                Trades
-              </Text>
-            </View>
+            <TabIcon name="trending-up" label="Trades" focused={focused} />
           ),
         }}
       />
 
+      {/* DASHBOARD */}
       <Tabs.Screen
-        name="review"
+        name="dashboard"
         options={{
           tabBarIcon: ({ focused }) => (
-            <View
-              style={[
-                styles.tabItem,
-                focused && styles.activeTab,
-              ]}
-            >
-              <Image
-                source={require("../../../assets/icons/ai.png")}
-                style={[
-                  styles.icon,
-                  // {
-                  //   tintColor: focused ? "#06b449" : "#8d8d8d",
-                  // },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: focused ? "#06b449" : "#8d8d8d",
-                  },
-                ]}
-              >
-                AI Review
-              </Text>
-            </View>
+            <TabIcon name="grid" label="Dashboard" focused={focused} />
+          ),
+        }}
+      />
+
+      {/* AI */}
+      <Tabs.Screen
+        name="ai"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name="sparkles" label="AI" focused={focused} />
           ),
         }}
       />
@@ -163,44 +127,32 @@ export default function Layout() {
 }
 
 const styles = StyleSheet.create({
- tabBar: {
-  height: 75,
-  position: "absolute",
-  borderTopWidth: 0,
-  elevation: 15,
-  backgroundColor: "transparent",
-  overflow: "hidden",
-  borderTopLeftRadius: 25,
-  borderTopRightRadius: 25,
-  paddingTop:16,
-},
-
   tabItem: {
-    width: 80,
-    height: 55,
-    justifyContent: "center",
     alignItems: "center",
-    borderRadius: 16,
+    justifyContent: "center",
+    gap: 4,
+    width: 70,
+    
   },
-
-  activeTab: {
-    backgroundColor: "#94029969",
-    borderWidth:2,
-    borderColor:"#94029969"
-  },
-
-  icon: {
-    width: 22,
-    height: 22,
-    resizeMode: "contain",
-    marginBottom: 2,
+  tabItemf: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    width: 70,
+    height:70,
+    backgroundColor:"rgb(104, 2, 151)",
+    borderRadius:100,
+    
   },
 
   label: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
+    color: "#ffd104",
+    marginTop: 2,
   },
-  main:{
-    backgroundColor:"yellow"
-  }
+
+  blurOverlay: {
+    backgroundColor: "rgba(9, 6, 10, 0.95)", // 👈 key fix: prevents UI clash
+  },
 });

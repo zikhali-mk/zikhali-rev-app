@@ -100,7 +100,7 @@ export default function Trade() {
 
   return (
     <ImageBackground
-      source={require("../../../assets/images/bg.jpg")}
+      source={require("../../../assets/images/background.jpg")}
       resizeMode="cover"
       style={styles.background}
     >
@@ -108,9 +108,9 @@ export default function Trade() {
 
       <LinearGradient
         colors={[
-          "rgba(18,0,40,0.90)",
-          "rgba(40,0,70,0.82)",
-          "rgba(15,0,30,0.94)",
+          "rgba(1, 3, 20, 0.64)",
+          "rgba(18, 2, 31, 0.82)",
+          "rgba(2, 1, 3, 0.94)",
         ]}
         style={styles.overlay}
       >
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 28,
-    color: "#fff",
+    color: "#f3ef0b",
     fontWeight: "700",
   },
 

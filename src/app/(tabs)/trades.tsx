@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StatusBar,
+  RefreshControl,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,29 +20,38 @@ export default function Trades() {
 
   const [trades, setTrades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [resultFilter, setResultFilter] = useState("ALL");
   const [sessionFilter, setSessionFilter] = useState("ALL");
 
-  const fetchTrades = async () => {
-    try {
-      setLoading(true);
+const fetchTrades = async () => {
+  try {
+    const res = await axios.get(
+      "https://expo-nextjs-backend.vercel.app/api/trade"
+    );
 
-      const res = await axios.get(
-        "https://expo-nextjs-backend.vercel.app/api/trade"
-      );
+    setTrades(res.data.trades || []);
+  } catch (error) {
+    console.log(error);
+  }
+};
+  const onRefresh = async () => {
+  setRefreshing(true);
 
-      setTrades(res.data.trades || []);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  await fetchTrades();
+
+  setRefreshing(false);
+};
 
   useEffect(() => {
-    fetchTrades();
-  }, []);
+  const load = async () => {
+    await fetchTrades();
+    setLoading(false);
+  };
+
+  load();
+}, []);
 
   const filteredTrades = trades.filter((t) => {
     const matchResult =
@@ -57,7 +67,7 @@ export default function Trades() {
     switch (result) {
       case "WIN":
         return "#22c55e";
-      case "LOSS":
+      case "LOSE":
         return "#ef4444";
       default:
         return "#facc15";
@@ -80,7 +90,17 @@ export default function Trades() {
         ]}
         style={styles.overlay}
       >
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView
+  contentContainerStyle={styles.container}
+  refreshControl={
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      colors={["#a855f7"]}      // Android
+      tintColor="#a855f7"       // iOS
+    />
+  }
+>
           
           {/* HEADER */}
           <Text style={styles.title}>📊 Trades</Text>
@@ -93,7 +113,7 @@ export default function Trades() {
             <Text style={styles.filterTitle}>Filters</Text>
 
             <View style={styles.filterRow}>
-              {["ALL", "WIN", "LOSS"].map((item) => (
+              {["ALL", "WIN", "LOSE"].map((item) => (
                 <TouchableOpacity
                   key={item}
                   onPress={() => setResultFilter(item)}
@@ -108,7 +128,7 @@ export default function Trades() {
             </View>
 
             <View style={styles.filterRow}>
-              {["ALL", "London", "New York", "Asia"].map((item) => (
+              {["ALL", "LONDON", "NEW YORK", "ASIA"].map((item) => (
                 <TouchableOpacity
                   key={item}
                   onPress={() => setSessionFilter(item)}
@@ -149,14 +169,24 @@ export default function Trades() {
                     </Text>
                   </View>
 
-                  <Text
-                    style={[
-                      styles.result,
-                      { color: getResultColor(trade.result) },
-                    ]}
-                  >
-                    {trade.result}
-                  </Text>
+                    <View style={styles.cardRow}>
+                        <Text
+                      style={[
+                        styles.result,
+                        { color: getResultColor(trade.result) },
+                      ]}
+                    >
+                      {trade.result}
+                      
+                    </Text>
+                    <Text
+                    style={trade.direction =="BUY"?styles.directionb:styles.directions}
+                    >
+                      {trade.direction}
+                      
+                    </Text>
+                    </View>
+                  
                 </BlurView>
               </TouchableOpacity>
             ))
@@ -185,7 +215,7 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 30,
-    color: "#fff",
+    color: "#eeff00",
     fontWeight: "800",
   },
 
@@ -262,4 +292,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 13,
   },
+  directions:{
+    color:"rgb(249, 253, 0)",
+    fontWeight:700,
+    fontSize:17
+  },
+  directionb:{
+    color:"rgb(101, 253, 0)",
+    fontWeight:700,
+    fontSize:17
+  },
+
 });
