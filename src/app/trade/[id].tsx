@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,8 +21,16 @@ export default function TradeDetails() {
   const router = useRouter();
 
   const [trade, setTrade] = useState<any>(null);
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   const [result, setResult] = useState("");
+  const [total, setTotal] = useState("");
+
+  // ===========================
+  // FETCH TRADE
+  // ===========================
 
   const fetchTrade = async () => {
     try {
@@ -31,61 +40,126 @@ export default function TradeDetails() {
         `https://expo-nextjs-backend.vercel.app/api/trade/${id}`
       );
 
-      setTrade(res.data.trade);
-      setResult(res.data.trade.result);
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Error", "Failed to load trade");
+      const tradeData = res.data.trade;
+
+      setTrade(tradeData);
+
+      setResult(tradeData.result || "");
+
+      // Store only numeric value for editing
+      setTotal(
+        Math.abs(Number(tradeData.total || 0)).toString()
+      );
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Error", "Failed to load trade.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (id) fetchTrade();
+    if (id) {
+      fetchTrade();
+    }
   }, [id]);
 
-  // =========================
-  // UPDATE RESULT ONLY
-  // =========================
+  // ===========================
+  // PULL TO REFRESH
+  // ===========================
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchTrade();
+    setRefreshing(false);
+  };
+
+  // ===========================
+  // UPDATE TRADE
+  // ===========================
+
   const updateTrade = async () => {
     try {
-      const res = await axios.patch(
+      const formattedTotal =
+        result.toUpperCase() === "WIN"
+          ? Math.abs(Number(total))
+          : -Math.abs(Number(total));
+
+      await axios.patch(
         `https://expo-nextjs-backend.vercel.app/api/trade/${id}`,
-        { result }
+        {
+          result,
+          total: formattedTotal,
+        }
       );
 
-      setTrade(res.data.trade);
+      Alert.alert(
+        "Success",
+        "Trade updated successfully."
+      );
 
-      Alert.alert("Success", "Trade updated successfully");
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Error", "Failed to update trade");
+      fetchTrade();
+    } catch (err) {
+      console.log(err);
+      Alert.alert(
+        "Error",
+        "Failed to update trade."
+      );
     }
   };
 
-  // =========================
+  // ===========================
   // DELETE TRADE
-  // =========================
+  // ===========================
+
   const deleteTrade = async () => {
-    try {
-      await axios.delete(
-        `https://expo-nextjs-backend.vercel.app/api/trade/${id}`
-      );
+    Alert.alert(
+      "Delete Trade",
+      "Are you sure?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await axios.delete(
+                `https://expo-nextjs-backend.vercel.app/api/trade/${id}`
+              );
 
-      Alert.alert("Deleted", "Trade removed successfully");
+              Alert.alert(
+                "Deleted",
+                "Trade deleted successfully."
+              );
 
-      router.push("/(tabs)/trades");
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Error", "Failed to delete trade");
-    }
+              router.replace("/(tabs)/trades");
+            } catch (err) {
+              console.log(err);
+              Alert.alert(
+                "Error",
+                "Failed to delete trade."
+              );
+            }
+          },
+        },
+      ]
+    );
   };
+
+  // ===========================
+  // LOADING
+  // ===========================
 
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#a855f7" />
+        <ActivityIndicator
+          size="large"
+          color="#8b5cf6"
+        />
       </View>
     );
   }
@@ -93,95 +167,239 @@ export default function TradeDetails() {
   if (!trade) {
     return (
       <View style={styles.loading}>
-        <Text style={{ color: "#fff" }}>Trade not found</Text>
+        <Text style={{ color: "#fff" }}>
+          Trade not found
+        </Text>
       </View>
     );
   }
 
+  const displayTotal =
+    trade.result?.toUpperCase() === "WIN"
+      ? `+${Math.abs(Number(trade.total))}`
+      : `-${Math.abs(Number(trade.total))}`;
+
   return (
     <ImageBackground
-      source={require("../../../assets/images/bg.jpg")}
+      source={require("../../../assets/images/background.jpg")}
       style={styles.background}
     >
       <LinearGradient
         colors={[
-          "rgba(20,0,40,0.95)",
-          "rgba(50,0,80,0.85)",
-          "rgba(10,0,25,0.95)",
+          "rgba(4,5,15,0.65)",
+          "rgba(18,2,31,0.82)",
+          "rgba(0,0,0,0.95)",
         ]}
         style={styles.overlay}
       >
-        <ScrollView contentContainerStyle={styles.container}>
-          
+        <ScrollView
+          contentContainerStyle={styles.container}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#8b5cf6"
+            />
+          }
+        >
           {/* HEADER */}
-          <Text style={styles.title}>{trade.symbol}</Text>
+
+          <Text style={styles.title}>
+            {trade.symbol}
+          </Text>
+
           <Text style={styles.subtitle}>
             Trade Details & Performance
           </Text>
 
-          {/* MAIN CARD */}
-          <BlurView intensity={35} tint="dark" style={styles.card}>
-            
+          {/* ========================= */}
+
+          {/* TRADE DETAILS */}
+
+          {/* ========================= */}
+
+          <BlurView
+            intensity={35}
+            tint="dark"
+            style={styles.card}
+          >
             <View style={styles.row}>
-              <Text style={styles.label}>Direction</Text>
-              <Text style={styles.value}>{trade.direction}</Text>
+              <Text style={styles.label}>
+                Direction
+              </Text>
+
+              <Text style={styles.value}>
+                {trade.direction}
+              </Text>
             </View>
 
             <View style={styles.row}>
-              <Text style={styles.label}>Entry</Text>
-              <Text style={styles.value}>{trade.entry}</Text>
+              <Text style={styles.label}>
+                Entry
+              </Text>
+
+              <Text style={styles.value}>
+                {trade.entry}
+              </Text>
             </View>
 
             <View style={styles.row}>
-              <Text style={styles.label}>Stop Loss</Text>
-              <Text style={styles.value}>{trade.sl}</Text>
+              <Text style={styles.label}>
+                Stop Loss
+              </Text>
+
+              <Text style={styles.value}>
+                {trade.sl}
+              </Text>
             </View>
 
             <View style={styles.row}>
-              <Text style={styles.label}>Take Profit</Text>
-              <Text style={styles.value}>{trade.tp}</Text>
+              <Text style={styles.label}>
+                Take Profit
+              </Text>
+
+              <Text style={styles.value}>
+                {trade.tp}
+              </Text>
             </View>
 
             <View style={styles.row}>
-              <Text style={styles.label}>RR</Text>
-              <Text style={styles.value}>{trade.rr}</Text>
+              <Text style={styles.label}>
+                RR
+              </Text>
+
+              <Text style={styles.value}>
+                {trade.rr}
+              </Text>
             </View>
 
             <View style={styles.row}>
-              <Text style={styles.label}>Session</Text>
-              <Text style={styles.value}>{trade.session}</Text>
+              <Text style={styles.label}>
+                Session
+              </Text>
+
+              <Text style={styles.value}>
+                {trade.session}
+              </Text>
             </View>
 
             <View style={styles.row}>
-              <Text style={styles.label}>Setup</Text>
-              <Text style={styles.value}>{trade.setup}</Text>
-            </View>
+              <Text style={styles.label}>
+                Setup
+              </Text>
 
-            {/* RESULT (EDITABLE) */}
-            <Text style={styles.label}>Result (Editable)</Text>
+              <Text style={styles.value}>
+                {trade.setup}
+              </Text>
+            </View>
+          </BlurView>
+
+          {/* ========================= */}
+
+          {/* PERFORMANCE */}
+
+          {/* ========================= */}
+
+          <BlurView
+            intensity={35}
+            tint="dark"
+            style={styles.card}
+          >
+            <Text style={styles.sectionTitle}>
+              Performance
+            </Text>
+
+            <Text style={styles.performanceLabel}>
+              Result
+            </Text>
+
+            <Text
+              style={[
+                styles.performanceValue,
+                trade.result?.toUpperCase() ===
+                "WIN"
+                  ? styles.win
+                  : styles.loss,
+              ]}
+            >
+              {trade.result}
+            </Text>
+
+            <Text style={styles.performanceLabel}>
+              Total
+            </Text>
+
+            <Text
+              style={[
+                styles.performanceValue,
+                trade.result?.toUpperCase() ===
+                "WIN"
+                  ? styles.win
+                  : styles.loss,
+              ]}
+            >
+              {displayTotal}
+            </Text>
+          </BlurView>
+
+          {/* ========================= */}
+
+          {/* EDIT FORM */}
+
+          {/* ========================= */}
+
+          <BlurView
+            intensity={35}
+            tint="dark"
+            style={styles.card}
+          >
+            <Text style={styles.sectionTitle}>
+              Edit Performance
+            </Text>
+
+            <Text style={styles.label}>
+              Result
+            </Text>
+
             <TextInput
               value={result}
               onChangeText={setResult}
               style={styles.input}
-              placeholder="WIN / LOSS"
-              placeholderTextColor="#aaa"
+              placeholder="WIN or LOSS"
+              placeholderTextColor="#888"
+            />
+
+            <Text style={styles.label}>
+              Total
+            </Text>
+
+            <TextInput
+              value={total}
+              onChangeText={setTotal}
+              keyboardType="numeric"
+              style={styles.input}
+              placeholder="100"
+              placeholderTextColor="#888"
             />
 
             <TouchableOpacity
-              onPress={updateTrade}
               style={styles.updateBtn}
+              onPress={updateTrade}
             >
-              <Text style={styles.btnText}>Update Trade</Text>
+              <Text style={styles.btnText}>
+                Update Trade
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={deleteTrade}
               style={styles.deleteBtn}
+              onPress={deleteTrade}
             >
-              <Text style={styles.btnText}>Delete Trade</Text>
+              <Text style={styles.btnText}>
+                Delete Trade
+              </Text>
             </TouchableOpacity>
           </BlurView>
-
         </ScrollView>
       </LinearGradient>
     </ImageBackground>
@@ -199,78 +417,139 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    padding: 18,
+    paddingHorizontal: 18,
+    paddingTop: 25,
     paddingBottom: 80,
   },
 
   loading: {
     flex: 1,
-    backgroundColor: "#0b0015",
+    backgroundColor: "#090011",
     justifyContent: "center",
     alignItems: "center",
   },
 
   title: {
-    fontSize: 30,
-    color: "#fff",
+    fontSize: 32,
     fontWeight: "800",
+    color: "#0fe769",
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
 
   subtitle: {
-    color: "#bbb",
-    marginBottom: 20,
+    fontSize: 14,
+    color: "#b5b5b5",
+    marginBottom: 22,
   },
 
   card: {
+    borderRadius: 24,
     padding: 18,
-    borderRadius: 22,
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.08)",
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 18,
   },
 
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.05)",
   },
 
   label: {
-    color: "#aaa",
-    fontSize: 13,
+    fontSize: 14,
+    color: "#9f9f9f",
+    marginBottom: 8,
   },
 
   value: {
-    color: "#fff",
+    fontSize: 15,
     fontWeight: "600",
+    color: "#ffffff",
+  },
+
+  performanceLabel: {
+    fontSize: 14,
+    color: "#999",
+    marginTop: 12,
+  },
+
+  performanceValue: {
+    fontSize: 30,
+    fontWeight: "800",
+    marginTop: 4,
+    marginBottom: 8,
+  },
+
+  win: {
+    color: "#22c55e",
+  },
+
+  loss: {
+    color: "#ef4444",
   },
 
   input: {
+    height: 55,
+    borderRadius: 16,
+    paddingHorizontal: 15,
     backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 14,
-    padding: 12,
-    color: "#fff",
-    marginTop: 8,
-    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+    color: "#ffffff",
+    fontSize: 15,
+    marginBottom: 16,
   },
 
   updateBtn: {
     backgroundColor: "#7c3aed",
-    padding: 14,
-    borderRadius: 14,
+    height: 55,
+    borderRadius: 16,
+    justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 5,
   },
 
   deleteBtn: {
-    backgroundColor: "#ef4444",
-    padding: 14,
-    borderRadius: 14,
+    backgroundColor: "#dc2626",
+    height: 55,
+    borderRadius: 16,
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 14,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 5,
   },
 
   btnText: {
-    color: "#fff",
+    color: "#ffffff",
+    fontSize: 16,
     fontWeight: "700",
+    letterSpacing: 0.4,
   },
 });

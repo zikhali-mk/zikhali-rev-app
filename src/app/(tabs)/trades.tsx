@@ -76,7 +76,7 @@ const fetchTrades = async () => {
 
   return (
     <ImageBackground
-      source={require("../../../assets/images/bg.jpg")}
+      source={require("../../../assets/images/background.jpg")}
       style={styles.background}
       resizeMode="cover"
     >
@@ -84,9 +84,9 @@ const fetchTrades = async () => {
 
       <LinearGradient
         colors={[
-          "rgba(20,0,40,0.95)",
-          "rgba(50,0,80,0.85)",
-          "rgba(10,0,25,0.95)",
+          "rgba(1, 3, 20, 0.64)",
+          "rgba(18, 2, 31, 0.82)",
+          "rgba(2, 1, 3, 0.94)",
         ]}
         style={styles.overlay}
       >
